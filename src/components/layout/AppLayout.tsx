@@ -19,13 +19,27 @@ export function AppLayout() {
 
   return (
     <Box sx={{ minHeight: "100svh", pb: 10, background: "var(--app-bg)" }}>
-      <Box sx={{ maxWidth: 920, margin: "0 auto", px: { xs: 2.25, sm: 3.25 }, pt: { xs: 2.25, sm: 3 } }}>
+      <Box
+        sx={{
+          maxWidth: 920,
+          margin: "0 auto",
+          px: { xs: 2.25, sm: 3.25 },
+          pt: { xs: 2.25, sm: 3 },
+        }}
+      >
         <Outlet />
       </Box>
 
       <Paper
         elevation={8}
-        sx={{ position: "fixed", left: 0, right: 0, bottom: 0, borderTopLeftRadius: 12, borderTopRightRadius: 12 }}
+        sx={{
+          position: "fixed",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          borderTopLeftRadius: 12,
+          borderTopRightRadius: 12,
+        }}
       >
         <BottomNavigation
           showLabels

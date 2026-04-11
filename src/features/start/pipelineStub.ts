@@ -1,7 +1,10 @@
 import JSZip from "jszip";
 import type { GeneratedAsset, GenerationProgress, WatermarkTemplate } from "./types";
 import type { TemplateWorkspaceFiles } from "../../template/runtime/compiler";
-import { runTemplateWithWorkspace, type RuntimeLogger } from "../../template/runtime/sharedTemplateRunner";
+import {
+  runTemplateWithWorkspace,
+  type RuntimeLogger,
+} from "../../template/runtime/sharedTemplateRunner";
 import type { RuntimeResult } from "../../template/runtime/templateWorkerSession";
 
 export interface GenerationPayload {

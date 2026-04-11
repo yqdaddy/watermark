@@ -37,7 +37,7 @@ export function AboutPage() {
             </Typography>
           </Stack>
           <Typography>
-            协助托管： {" "}
+            协助托管：{" "}
             <Link href="https://github.com/foxderin" target="_blank" rel="noopener noreferrer">
               @foxderin (玻狸)
             </Link>

@@ -6,7 +6,17 @@ export interface ConfigFieldDescriptor {
   key: string;
   name: string;
   description?: string;
-  kind: "string" | "number" | "boolean" | "enum" | "select" | "image" | "rgb" | "rgba" | "size" | "coord";
+  kind:
+    | "string"
+    | "number"
+    | "boolean"
+    | "enum"
+    | "select"
+    | "image"
+    | "rgb"
+    | "rgba"
+    | "size"
+    | "coord";
   required?: boolean;
   default?:
     | string
@@ -81,5 +91,9 @@ export interface WorkerDoneMessage {
   };
 }
 
-export type WorkerIncomingMessage = WorkerInitRequest | WorkerRunRequest | WorkerEvaluateRequest | WorkerDisposeRequest;
+export type WorkerIncomingMessage =
+  | WorkerInitRequest
+  | WorkerRunRequest
+  | WorkerEvaluateRequest
+  | WorkerDisposeRequest;
 export type WorkerOutgoingMessage = WorkerLogMessage | WorkerProgressMessage | WorkerDoneMessage;

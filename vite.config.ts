@@ -4,7 +4,9 @@ import { VitePWA } from "vite-plugin-pwa";
 import { fileURLToPath, URL } from "node:url";
 import { readFileSync } from "node:fs";
 
-const packageJson = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as {
+const packageJson = JSON.parse(
+  readFileSync(new URL("./package.json", import.meta.url), "utf8"),
+) as {
   version?: string;
 };
 
@@ -36,7 +38,8 @@ export default defineConfig({
         navigateFallback: "/index.html",
         runtimeCaching: [
           {
-            urlPattern: ({ request }) => request.destination === "image" || request.destination === "video",
+            urlPattern: ({ request }) =>
+              request.destination === "image" || request.destination === "video",
             handler: "CacheFirst",
             options: {
               cacheName: "media-cache",

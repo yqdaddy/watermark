@@ -52,6 +52,179 @@ interface PixiApplicationLike {
 }
 
 let pixiRuntimeLifecycleGuardsApplied = false;
+let webCodecsGuardsApplied = false;
+
+function toArrayBuffer(input: AllowSharedBufferSource): ArrayBuffer {
+  if (ArrayBuffer.isView(input)) {
+    const copied = new Uint8Array(input.byteLength);
+    copied.set(new Uint8Array(input.buffer, input.byteOffset, input.byteLength));
+    return copied.buffer;
+  }
+
+  if (input instanceof ArrayBuffer) {
+    return input.slice(0);
+  }
+
+  const copied = new Uint8Array(input.byteLength);
+  copied.set(new Uint8Array(input));
+  return copied.buffer;
+}
+
+function cleanH264NALUnit(nalu: Uint8Array, expectedType: number): Uint8Array {
+  if (nalu.length === 0) return nalu;
+
+  let start = 0;
+
+  // Defensive normalization: if Annex-B start code leaked into AVCC NALU, strip it.
+  if (nalu.length > 4 && nalu[0] === 0 && nalu[1] === 0) {
+    if (nalu[2] === 0 && nalu[3] === 1) {
+      start = 4;
+    } else if (nalu[2] === 1) {
+      start = 3;
+    }
+  }
+
+  while (start < nalu.length - 1) {
+    const type = nalu[start] & 0x1f;
+    if (type === expectedType && nalu[start] === nalu[start + 1]) {
+      start += 1;
+    } else {
+      break;
+    }
+  }
+
+  return start === 0 ? nalu : nalu.slice(start);
+}
+
+/**
+ * Parse and sanitize AVCDecoderConfigurationRecord (AVCC) according to ISO/IEC 14496-15.
+ */
+function sanitizeAVCCRecord(buffer: ArrayBuffer | ArrayBufferView): ArrayBuffer {
+  const rawBuffer = toArrayBuffer(
+    ArrayBuffer.isView(buffer)
+      ? new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+      : buffer,
+  );
+  const view = new DataView(rawBuffer);
+  const bytes = new Uint8Array(rawBuffer);
+
+  if (bytes.length < 7 || bytes[0] !== 0x01) {
+    return rawBuffer.slice(0);
+  }
+
+  try {
+    let offset = 0;
+
+    const version = view.getUint8(offset++);
+    const profile = view.getUint8(offset++);
+    const profileCompat = view.getUint8(offset++);
+    const level = view.getUint8(offset++);
+
+    const lengthSizeMinusOne = view.getUint8(offset++) | 0xfc;
+
+    const numOfSPSByte = view.getUint8(offset++);
+    const numOfSPS = numOfSPSByte & 0x1f;
+    const fixedNumOfSPSByte = numOfSPSByte | 0xe0;
+
+    const spsList: Uint8Array[] = [];
+    for (let i = 0; i < numOfSPS; i += 1) {
+      const spsLen = view.getUint16(offset);
+      offset += 2;
+      const spsNalu = bytes.subarray(offset, offset + spsLen);
+      spsList.push(cleanH264NALUnit(spsNalu, 7));
+      offset += spsLen;
+    }
+
+    const numOfPPS = view.getUint8(offset++);
+    const ppsList: Uint8Array[] = [];
+    for (let i = 0; i < numOfPPS; i += 1) {
+      const ppsLen = view.getUint16(offset);
+      offset += 2;
+      const ppsNalu = bytes.subarray(offset, offset + ppsLen);
+      ppsList.push(cleanH264NALUnit(ppsNalu, 8));
+      offset += ppsLen;
+    }
+
+    let newTotalLength = 7;
+    for (const sps of spsList) newTotalLength += 2 + sps.length;
+    for (const pps of ppsList) newTotalLength += 2 + pps.length;
+
+    const newBuffer = new ArrayBuffer(newTotalLength);
+    const newView = new DataView(newBuffer);
+    const newBytes = new Uint8Array(newBuffer);
+
+    let writeOffset = 0;
+    newView.setUint8(writeOffset++, version);
+    newView.setUint8(writeOffset++, profile);
+    newView.setUint8(writeOffset++, profileCompat);
+    newView.setUint8(writeOffset++, level);
+    newView.setUint8(writeOffset++, lengthSizeMinusOne);
+    newView.setUint8(writeOffset++, fixedNumOfSPSByte);
+
+    for (const sps of spsList) {
+      newView.setUint16(writeOffset, sps.length);
+      writeOffset += 2;
+      newBytes.set(sps, writeOffset);
+      writeOffset += sps.length;
+    }
+
+    newView.setUint8(writeOffset++, numOfPPS);
+
+    for (const pps of ppsList) {
+      newView.setUint16(writeOffset, pps.length);
+      writeOffset += 2;
+      newBytes.set(pps, writeOffset);
+      writeOffset += pps.length;
+    }
+
+    return newBuffer;
+  } catch (error) {
+    console.warn("[WebCodecs] 无法解析或修复 AVCC 头，退回原始数据", error);
+    return rawBuffer.slice(0);
+  }
+}
+
+function ensureWebCodecsLifecycleGuards() {
+  // FIXME: Firefox 149 AVCC bug (Windows)
+  if (webCodecsGuardsApplied || typeof globalThis.VideoEncoder === "undefined") {
+    return;
+  }
+  webCodecsGuardsApplied = true;
+
+  const OriginalVideoEncoder = globalThis.VideoEncoder;
+  globalThis.VideoEncoder = new Proxy(OriginalVideoEncoder, {
+    construct(target, args) {
+      const init = args[0] as VideoEncoderInit | undefined;
+      if (init && typeof init.output === "function") {
+        const originalOutput = init.output as (
+          chunk: EncodedVideoChunk,
+          metadata?: EncodedVideoChunkMetadata,
+        ) => void;
+        let checkedDescriptionOnFirstFrame = false;
+
+        init.output = function patchedOutput(
+          chunk: EncodedVideoChunk,
+          metadata?: EncodedVideoChunkMetadata,
+        ) {
+          if (!checkedDescriptionOnFirstFrame) {
+            checkedDescriptionOnFirstFrame = true;
+            const decoderConfig = metadata?.decoderConfig;
+            const description = decoderConfig?.description;
+            const codec = (decoderConfig?.codec ?? "").toLowerCase();
+            const isAvc = codec.startsWith("avc");
+            if (description && isAvc && decoderConfig) {
+              decoderConfig.description = sanitizeAVCCRecord(toArrayBuffer(description));
+            }
+          }
+
+          originalOutput(chunk, metadata);
+        };
+      }
+
+      return Reflect.construct(target, args);
+    },
+  });
+}
 
 function normalizePixiRendererDestroyOptions(
   rendererDestroyOptions: boolean | PixiRendererDestroyOptionsLike = false,
@@ -131,7 +304,17 @@ export interface EvaluatedConfigFieldDescriptor {
   key: string;
   name: string;
   description?: string;
-  kind: "string" | "number" | "boolean" | "enum" | "select" | "image" | "rgb" | "rgba" | "size" | "coord";
+  kind:
+    | "string"
+    | "number"
+    | "boolean"
+    | "enum"
+    | "select"
+    | "image"
+    | "rgb"
+    | "rgba"
+    | "size"
+    | "coord";
   required?: boolean;
   default?:
     | string
@@ -340,8 +523,6 @@ async function pickMediabunnyVideoCodec(
     return cachedCodec;
   }
 
-  // FIXME: See Firefox's bug on encoding H.264. I will prefer VP9 for now until Firefox releases a fix.
-  // Bug exists in Firefox 149.02.
   const codecCandidates: VideoCodec[] = ["avc", "vp9", "hevc", "av1", "vp8"];
   for (const codec of codecCandidates) {
     if (await canEncodeVideo(codec, { width, height, bitrate })) {
@@ -885,6 +1066,8 @@ export async function executeTemplateApp(options: {
   logger: RuntimeLogger;
   signal?: AbortSignal;
 }) {
+  ensureWebCodecsLifecycleGuards();
+
   const progressBridge = createFrameProgressBridge(options.logger.progress);
   const input = await createMediaInput(
     options.mediaFile,
@@ -917,6 +1100,8 @@ export async function loadTemplateModule(
   configCtor?: TemplateConfigCtor;
   moduleOrder: string[];
 }> {
+  ensureWebCodecsLifecycleGuards();
+
   const bundle = await compileTemplateWorkspace(files, entry);
 
   ensurePixiRuntimeLifecycleGuards();
@@ -959,7 +1144,8 @@ export function extractTemplateConfigFields(configCtor?: TemplateConfigCtor) {
   }
 
   const fields = getSchemaFields(configCtor);
-  const rawFields = fields.length > 0 ? fields : instance ? getSchemaFields(instance as object) : [];
+  const rawFields =
+    fields.length > 0 ? fields : instance ? getSchemaFields(instance as object) : [];
 
   if (!instance || typeof instance !== "object") {
     return rawFields;

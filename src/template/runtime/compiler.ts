@@ -1,5 +1,9 @@
 import * as Babel from "@babel/standalone";
-import { compileWorkspaceToSyncBundle, type SyncBundleResult, type TemplateWorkspaceFiles } from "./bundler";
+import {
+  compileWorkspaceToSyncBundle,
+  type SyncBundleResult,
+  type TemplateWorkspaceFiles,
+} from "./bundler";
 
 export async function compileTemplateCode(source: string, filename = "index.ts") {
   const output = Babel.transform(source, {

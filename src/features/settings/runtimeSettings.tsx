@@ -19,15 +19,20 @@ function detectInitialMaxConcurrency() {
 
   const navigatorWithMemory = navigator as Navigator & { deviceMemory?: number };
   const rawDeviceMemory = Number(navigatorWithMemory.deviceMemory ?? 0);
-  const deviceMemory = Number.isFinite(rawDeviceMemory) && rawDeviceMemory > 0 ? rawDeviceMemory : 4;
+  const deviceMemory =
+    Number.isFinite(rawDeviceMemory) && rawDeviceMemory > 0 ? rawDeviceMemory : 4;
 
   const cpuLimited = Math.max(1, Math.min(8, Math.floor(coreCount * 0.75)));
   const memoryLimited =
-    deviceMemory >= 16 ? 8 :
-    deviceMemory >= 8 ? 6 :
-    deviceMemory >= 4 ? 4 :
-    deviceMemory >= 2 ? 2 :
-    1;
+    deviceMemory >= 16
+      ? 8
+      : deviceMemory >= 8
+        ? 6
+        : deviceMemory >= 4
+          ? 4
+          : deviceMemory >= 2
+            ? 2
+            : 1;
 
   return Math.max(1, Math.min(64, Math.min(cpuLimited, memoryLimited)));
 }
@@ -101,7 +106,9 @@ export function RuntimeSettingsProvider({ children }: { children: ReactNode }) {
     [settings],
   );
 
-  return <RuntimeSettingsContext.Provider value={value}>{children}</RuntimeSettingsContext.Provider>;
+  return (
+    <RuntimeSettingsContext.Provider value={value}>{children}</RuntimeSettingsContext.Provider>
+  );
 }
 
 export function useRuntimeSettings() {

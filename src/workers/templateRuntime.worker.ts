@@ -9,8 +9,14 @@ import {
   type TemplateConfigCtor,
   type TemplateDefaultExport,
 } from "../template/runtime/sharedTemplateRunner";
-import type { ConfigFieldDescriptor, RuntimeOutputProfile } from "../template/runtime/workerProtocol";
-import type { WorkerIncomingMessage, WorkerOutgoingMessage } from "../template/runtime/workerProtocol";
+import type {
+  ConfigFieldDescriptor,
+  RuntimeOutputProfile,
+} from "../template/runtime/workerProtocol";
+import type {
+  WorkerIncomingMessage,
+  WorkerOutgoingMessage,
+} from "../template/runtime/workerProtocol";
 
 interface WorkerRuntimeState {
   app?: TemplateDefaultExport;
@@ -39,7 +45,10 @@ function createLogger(requestId: string) {
   };
 }
 
-async function initializeTemplate(requestId: string, payload: { files: Record<string, string>; entry: string }) {
+async function initializeTemplate(
+  requestId: string,
+  payload: { files: Record<string, string>; entry: string },
+) {
   const logger = createLogger(requestId);
   logger.info("开始编译模板工作区");
 
@@ -128,7 +137,7 @@ self.onmessage = async (event: MessageEvent<WorkerIncomingMessage>) => {
         ? await initializeTemplate(requestId, event.data.payload)
         : event.data.type === "evaluate-config"
           ? await evaluateConfig(requestId, event.data.payload)
-        : await runTemplate(requestId, event.data.payload);
+          : await runTemplate(requestId, event.data.payload);
 
     postMessageSafe({ type: "done", requestId, result });
   } catch (error) {

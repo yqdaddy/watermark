@@ -73,12 +73,11 @@ function ensureFieldMap(target: object) {
 function registerFieldPatch(target: object, key: string, patch: Partial<Omit<SchemaField, "key">>) {
   const { map, order } = ensureFieldMap(target);
   const existing = map.get(key);
-  const next: InternalSchemaField =
-    existing ?? {
-      key,
-      when: [],
-      order: order.length,
-    };
+  const next: InternalSchemaField = existing ?? {
+    key,
+    when: [],
+    order: order.length,
+  };
 
   if (!existing) {
     order.push(key);
@@ -127,7 +126,11 @@ function applyPatch(
 function makeDecorator(field: Omit<SchemaField, "key">) {
   return function (
     _value: unknown,
-    context: { name: string | symbol; metadata?: object; addInitializer?: (cb: () => void) => void },
+    context: {
+      name: string | symbol;
+      metadata?: object;
+      addInitializer?: (cb: () => void) => void;
+    },
   ) {
     applyPatch(context, () => field);
   };
@@ -227,7 +230,11 @@ export const schema = {
   group(name: string) {
     return function (
       _value: unknown,
-      context: { name: string | symbol; metadata?: object; addInitializer?: (cb: () => void) => void },
+      context: {
+        name: string | symbol;
+        metadata?: object;
+        addInitializer?: (cb: () => void) => void;
+      },
     ) {
       applyPatch(context, () => ({ groupPath: [name] }));
     };
@@ -235,7 +242,11 @@ export const schema = {
   grid(group: string, gridIndex: number) {
     return function (
       _value: unknown,
-      context: { name: string | symbol; metadata?: object; addInitializer?: (cb: () => void) => void },
+      context: {
+        name: string | symbol;
+        metadata?: object;
+        addInitializer?: (cb: () => void) => void;
+      },
     ) {
       applyPatch(context, () => ({ groupPath: [group], gridIndex }));
     };
@@ -243,7 +254,11 @@ export const schema = {
   if(predicate: SchemaIfPredicate) {
     return function (
       _value: unknown,
-      context: { name: string | symbol; metadata?: object; addInitializer?: (cb: () => void) => void },
+      context: {
+        name: string | symbol;
+        metadata?: object;
+        addInitializer?: (cb: () => void) => void;
+      },
     ) {
       applyPatch(context, () => ({ when: [predicate] }));
     };

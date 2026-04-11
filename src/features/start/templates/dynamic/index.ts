@@ -102,10 +102,7 @@ function clampAlpha(value: unknown, fallback = 1) {
   return Math.max(0, Math.min(1, Number(numeric.toFixed(3))));
 }
 
-function normalizeRgba(
-  value: unknown,
-  fallback: { r: number; g: number; b: number; a: number },
-) {
+function normalizeRgba(value: unknown, fallback: { r: number; g: number; b: number; a: number }) {
   const source = value as Record<string, unknown> | null | undefined;
   return {
     r: clampByte(source?.r, fallback.r),

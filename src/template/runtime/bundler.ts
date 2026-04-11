@@ -49,7 +49,15 @@ function resolveModuleId(request: string, importer: string, files: TemplateWorks
   }
 
   const base = resolveRelativePath(importer, request);
-  const candidates = [base, `${base}.ts`, `${base}.tsx`, `${base}.js`, `${base}.jsx`, `${base}/index.ts`, `${base}/index.tsx`];
+  const candidates = [
+    base,
+    `${base}.ts`,
+    `${base}.tsx`,
+    `${base}.js`,
+    `${base}.jsx`,
+    `${base}/index.ts`,
+    `${base}/index.tsx`,
+  ];
 
   for (const candidate of candidates.map(normalizePath)) {
     if (Object.prototype.hasOwnProperty.call(files, candidate)) {
@@ -61,7 +69,9 @@ function resolveModuleId(request: string, importer: string, files: TemplateWorks
 }
 
 function parseStaticImports(source: string): string[] {
-  const fromMatches = [...source.matchAll(/(?:import|export)\s+[^\n;]*?from\s+["']([^"']+)["']/g)].map((m) => m[1]);
+  const fromMatches = [
+    ...source.matchAll(/(?:import|export)\s+[^\n;]*?from\s+["']([^"']+)["']/g),
+  ].map((m) => m[1]);
   const bareMatches = [...source.matchAll(/import\s+["']([^"']+)["']/g)].map((m) => m[1]);
   return [...new Set([...fromMatches, ...bareMatches])];
 }
@@ -108,7 +118,11 @@ export async function compileWorkspaceToSyncBundle(
   const entryId = resolveModuleId(`./${entry}`, "", normalizedFiles);
   const orderedModules: string[] = [];
   const visited = new Set<string>();
-  const builtInModuleIds = new Set([schemaBuiltinModuleId, pixiBuiltinModuleId, typingsBuiltinModuleId]);
+  const builtInModuleIds = new Set([
+    schemaBuiltinModuleId,
+    pixiBuiltinModuleId,
+    typingsBuiltinModuleId,
+  ]);
 
   function dfs(fileId: string) {
     if (visited.has(fileId) || builtInModuleIds.has(fileId)) return;
@@ -138,9 +152,15 @@ export async function compileWorkspaceToSyncBundle(
     moduleRecords.push(`"${fileId}": function(require, module, exports){\n${transformed}\n}`);
   }
 
-  moduleRecords.push(`"${schemaBuiltinModuleId}": function(require, module, exports){\n${schemaBuiltinModuleCode()}\n}`);
-  moduleRecords.push(`"${pixiBuiltinModuleId}": function(require, module, exports){\n${pixiBuiltinModuleCode()}\n}`);
-  moduleRecords.push(`"${typingsBuiltinModuleId}": function(require, module, exports){\n${typingsBuiltinModuleCode()}\n}`);
+  moduleRecords.push(
+    `"${schemaBuiltinModuleId}": function(require, module, exports){\n${schemaBuiltinModuleCode()}\n}`,
+  );
+  moduleRecords.push(
+    `"${pixiBuiltinModuleId}": function(require, module, exports){\n${pixiBuiltinModuleCode()}\n}`,
+  );
+  moduleRecords.push(
+    `"${typingsBuiltinModuleId}": function(require, module, exports){\n${typingsBuiltinModuleCode()}\n}`,
+  );
 
   const code = `
 "use strict";
@@ -165,6 +185,11 @@ return __require("${entryId}");
   return {
     code,
     entryId,
-    moduleOrder: [...orderedModules, schemaBuiltinModuleId, pixiBuiltinModuleId, typingsBuiltinModuleId],
+    moduleOrder: [
+      ...orderedModules,
+      schemaBuiltinModuleId,
+      pixiBuiltinModuleId,
+      typingsBuiltinModuleId,
+    ],
   };
 }

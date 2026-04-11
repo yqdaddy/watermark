@@ -56,5 +56,9 @@ export function UnsavedChangesGuardProvider({ children }: { children: ReactNode 
     [hasUnsavedChanges, navigationBlocked],
   );
 
-  return <UnsavedChangesGuardContext.Provider value={value}>{children}</UnsavedChangesGuardContext.Provider>;
+  return (
+    <UnsavedChangesGuardContext.Provider value={value}>
+      {children}
+    </UnsavedChangesGuardContext.Provider>
+  );
 }

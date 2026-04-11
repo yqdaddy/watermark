@@ -32,7 +32,12 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useUnsavedChangesGuard } from "../../unsavedChangesGuard";
 import { CodeEditor } from "../../editor/CodeEditor";
-import { defaultTemplateFiles, exportTemplateZip, importTemplateZip, type TemplateFiles } from "../../utils/zip/templateZip";
+import {
+  defaultTemplateFiles,
+  exportTemplateZip,
+  importTemplateZip,
+  type TemplateFiles,
+} from "../../utils/zip/templateZip";
 
 interface TreeItem {
   type: "folder" | "file";
@@ -273,7 +278,10 @@ export function TemplateEditor() {
       setFolders(nextFolders);
       setExpandedFolders(nextExpanded);
 
-      if (selectedFolder && (selectedFolder === target.path || selectedFolder.startsWith(`${target.path}/`))) {
+      if (
+        selectedFolder &&
+        (selectedFolder === target.path || selectedFolder.startsWith(`${target.path}/`))
+      ) {
         setSelectedFolder(replacePrefix(selectedFolder, target.path, nextPath));
       }
 
@@ -367,12 +375,22 @@ export function TemplateEditor() {
 
         <Card sx={{ borderRadius: 1.25 }}>
           <CardContent>
-            <Stack spacing={1.2} alignItems="center" justifyContent="center" sx={{ minHeight: 280 }}>
+            <Stack
+              spacing={1.2}
+              alignItems="center"
+              justifyContent="center"
+              sx={{ minHeight: 280 }}
+            >
               <UploadFileRoundedIcon sx={{ fontSize: 48 }} />
               <Typography variant="h5" fontWeight={700} textAlign="center">
                 上传模板 Zip
               </Typography>
-              <Button component="label" variant="contained" size="large" startIcon={<UploadFileRoundedIcon />}>
+              <Button
+                component="label"
+                variant="contained"
+                size="large"
+                startIcon={<UploadFileRoundedIcon />}
+              >
                 选择 Zip 文件
                 <input hidden accept=".zip" type="file" onChange={(event) => onFileImport(event)} />
               </Button>
@@ -380,7 +398,12 @@ export function TemplateEditor() {
           </CardContent>
         </Card>
 
-        <Button sx={{ alignSelf: "center" }} size="small" variant="text" onClick={startWithEmptyTemplate}>
+        <Button
+          sx={{ alignSelf: "center" }}
+          size="small"
+          variant="text"
+          onClick={startWithEmptyTemplate}
+        >
           使用空模板开始
         </Button>
       </Stack>
@@ -517,8 +540,14 @@ export function TemplateEditor() {
                       py: 0.65,
                       borderRadius: 1,
                       ml: item.depth * 2,
-                      background: item.type === "folder" && selectedFolder === item.path ? "rgba(53, 94, 201, .12)" : "transparent",
-                      border: item.type === "folder" && selectedFolder === item.path ? "1px solid rgba(53, 94, 201, .35)" : "1px solid transparent",
+                      background:
+                        item.type === "folder" && selectedFolder === item.path
+                          ? "rgba(53, 94, 201, .12)"
+                          : "transparent",
+                      border:
+                        item.type === "folder" && selectedFolder === item.path
+                          ? "1px solid rgba(53, 94, 201, .35)"
+                          : "1px solid transparent",
                     }}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", width: 40, flexShrink: 0 }}>
@@ -539,18 +568,28 @@ export function TemplateEditor() {
                     </Box>
                     <Typography
                       variant="body2"
-                      sx={{ flex: 1, fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" }}
+                      sx={{
+                        flex: 1,
+                        fontFamily:
+                          "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                      }}
                     >
                       {item.name}
                     </Typography>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexShrink: 0, width: 76, justifyContent: "flex-end" }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.5,
+                        flexShrink: 0,
+                        width: 76,
+                        justifyContent: "flex-end",
+                      }}
+                    >
                       {item.type === "file" && item.path === activePath ? (
                         <EditRoundedIcon sx={{ fontSize: 18, color: "#c28a00" }} />
                       ) : null}
-                      <IconButton
-                        size="small"
-                        onClick={(event) => openItemMenu(event, item)}
-                      >
+                      <IconButton size="small" onClick={(event) => openItemMenu(event, item)}>
                         <MoreVertRoundedIcon fontSize="small" />
                       </IconButton>
                     </Box>
@@ -594,7 +633,12 @@ export function TemplateEditor() {
         </MenuItem>
       </Menu>
 
-      <Dialog open={Boolean(openCreateDialog)} onClose={() => setOpenCreateDialog(false)} fullWidth maxWidth="xs">
+      <Dialog
+        open={Boolean(openCreateDialog)}
+        onClose={() => setOpenCreateDialog(false)}
+        fullWidth
+        maxWidth="xs"
+      >
         <DialogTitle>{openCreateDialog === "folder" ? "创建文件夹" : "创建文件"}</DialogTitle>
         <DialogContent>
           <Stack spacing={1.4} sx={{ pt: 1 }}>
@@ -602,7 +646,11 @@ export function TemplateEditor() {
               autoFocus
               size="small"
               label={openCreateDialog === "folder" ? "文件夹名称" : "文件名"}
-              placeholder={openCreateDialog === "folder" ? "new-folder 或 nested/utils" : "new-file.ts 或 nested/utils.ts"}
+              placeholder={
+                openCreateDialog === "folder"
+                  ? "new-folder 或 nested/utils"
+                  : "new-file.ts 或 nested/utils.ts"
+              }
               value={pendingName}
               onChange={(event) => setPendingName(event.target.value)}
             />
@@ -621,7 +669,12 @@ export function TemplateEditor() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={openRenameDialog} onClose={() => setOpenRenameDialog(false)} fullWidth maxWidth="xs">
+      <Dialog
+        open={openRenameDialog}
+        onClose={() => setOpenRenameDialog(false)}
+        fullWidth
+        maxWidth="xs"
+      >
         <DialogTitle>重命名</DialogTitle>
         <DialogContent>
           <Stack spacing={1.4} sx={{ pt: 1 }}>

@@ -13,7 +13,8 @@ import {
 import { useRuntimeSettings } from "./runtimeSettings";
 
 export function SettingsPanel() {
-  const { settings, setUseMainThreadRender, setMaxConcurrency, resetSettings } = useRuntimeSettings();
+  const { settings, setUseMainThreadRender, setMaxConcurrency, resetSettings } =
+    useRuntimeSettings();
 
   return (
     <Stack spacing={2.2}>
@@ -58,7 +59,8 @@ export function SettingsPanel() {
           <Stack spacing={0.9}>
             <Typography fontWeight={700}>关于</Typography>
             <Typography variant="body2" color="text.secondary">
-              版本: v{__APP_VERSION__} (GitHub: <Link href="https://github.com/FurryR/watermark">FurryR/watermark</Link>)
+              版本: v{__APP_VERSION__} (GitHub:{" "}
+              <Link href="https://github.com/FurryR/watermark">FurryR/watermark</Link>)
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Made with love by FurryR

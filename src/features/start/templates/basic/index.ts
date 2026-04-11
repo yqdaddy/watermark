@@ -130,7 +130,7 @@ export class Config {
     { 左上: "lt", 右上: "rt", 左下: "lb", 右下: "rb", 自定义: "custom" },
     { description: "水印位置" },
   )
-  position: 'lt' | 'rt' | 'lb' | 'rb' | 'custom' = "rb";
+  position: "lt" | "rt" | "lb" | "rb" | "custom" = "rb";
 
   @schema.group("位置")
   @schema.group("自定义位置")
@@ -152,10 +152,7 @@ function clampAlpha(value: unknown, fallback = 1) {
   return Math.max(0, Math.min(1, Number(numeric.toFixed(3))));
 }
 
-function normalizeRgba(
-  value: unknown,
-  fallback: { r: number; g: number; b: number; a: number },
-) {
+function normalizeRgba(value: unknown, fallback: { r: number; g: number; b: number; a: number }) {
   const source = value as Record<string, unknown> | null | undefined;
   return {
     r: clampByte(source?.r, fallback.r),
@@ -192,7 +189,9 @@ function normalizeKind(value: unknown): WatermarkKind {
 }
 
 function normalizeFontFamily(value: unknown) {
-  const normalized = String(value ?? "sans-serif").trim().toLowerCase();
+  const normalized = String(value ?? "sans-serif")
+    .trim()
+    .toLowerCase();
   switch (normalized) {
     case "serif":
       return "serif";
@@ -211,7 +210,11 @@ function normalizeFontFamily(value: unknown) {
 }
 
 function resolveFontFamily(config: Config) {
-  if (String(config.fontFamily ?? "").trim().toLowerCase() === "custom") {
+  if (
+    String(config.fontFamily ?? "")
+      .trim()
+      .toLowerCase() === "custom"
+  ) {
     const custom = String(config.customFontFamily ?? "").trim();
     if (custom.length > 0) {
       return custom;
@@ -259,7 +262,11 @@ async function loadTextureFromDataUri(dataUri: string) {
   };
 }
 
-export default async function App(config: Config, imageOrVideo: TemplateVideoInput, logger: TemplateLogger) {
+export default async function App(
+  config: Config,
+  imageOrVideo: TemplateVideoInput,
+  logger: TemplateLogger,
+) {
   logger.info("Basic 模板启动", config, Boolean(PIXI.Application));
 
   const [width, height] = imageOrVideo.resolution;
@@ -270,8 +277,18 @@ export default async function App(config: Config, imageOrVideo: TemplateVideoInp
   const strokeColor = normalizeRgba(config.strokeColor, { r: 0, g: 0, b: 0, a: 0 });
   const textBackgroundColor = normalizeRgba(config.textBackgroundColor, { r: 0, g: 0, b: 0, a: 0 });
   const fullScreenColor = normalizeRgba(config.fullScreenColor, { r: 255, g: 255, b: 255, a: 0.1 });
-  const fullScreenStrokeColor = normalizeRgba(config.fullScreenStrokeColor, { r: 0, g: 0, b: 0, a: 0 });
-  const fullScreenBackgroundColor = normalizeRgba(config.fullScreenBackgroundColor, { r: 0, g: 0, b: 0, a: 0 });
+  const fullScreenStrokeColor = normalizeRgba(config.fullScreenStrokeColor, {
+    r: 0,
+    g: 0,
+    b: 0,
+    a: 0,
+  });
+  const fullScreenBackgroundColor = normalizeRgba(config.fullScreenBackgroundColor, {
+    r: 0,
+    g: 0,
+    b: 0,
+    a: 0,
+  });
   const textBackgroundSize = normalizeSizeValue(config.textBackgroundSize);
   const fullScreenBackgroundSize = normalizeSizeValue(config.fullScreenBackgroundSize);
   const text = normalizeText(config.text, "水印");
@@ -308,8 +325,8 @@ export default async function App(config: Config, imageOrVideo: TemplateVideoInp
   const padX = Math.max(16, Math.round(width * 0.02));
   const padY = Math.max(16, Math.round(height * 0.02));
   const anchor = resolveAnchor(position);
-  const baseX = position === "custom" ? customX : (anchor.isRight ? width - padX : padX);
-  const baseY = position === "custom" ? customY : (anchor.isTop ? padY : height - padY);
+  const baseX = position === "custom" ? customX : anchor.isRight ? width - padX : padX;
+  const baseY = position === "custom" ? customY : anchor.isTop ? padY : height - padY;
 
   let watermarkBitmap: ImageBitmap | null = null;
   let watermarkTexture: PIXI.Texture | null = null;
@@ -416,7 +433,10 @@ export default async function App(config: Config, imageOrVideo: TemplateVideoInp
     fullScreenLayer.position.set(width / 2, height / 2);
     fullScreenLayer.rotation = (rotationDegrees * Math.PI) / 180;
 
-    const fullScreenStrokeThickness = Math.max(0, Math.round(size * 0.06 * fullScreenStrokeColor.a));
+    const fullScreenStrokeThickness = Math.max(
+      0,
+      Math.round(size * 0.06 * fullScreenStrokeColor.a),
+    );
     const fullScreenTextStyle = new PIXI.TextStyle({
       fill: rgbaToNumber(fullScreenColor),
       fontSize: size,
@@ -475,8 +495,6 @@ export default async function App(config: Config, imageOrVideo: TemplateVideoInp
 
   try {
     imageOrVideo.onFrame(() => {
-      
-
       videoTexture.source.update();
       app.renderer.render(stage);
 

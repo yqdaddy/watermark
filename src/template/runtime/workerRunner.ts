@@ -40,7 +40,7 @@ export interface TemplateRuntimeSession {
     mediaFile?: File,
     maxDurationMilliseconds?: number,
     signal?: AbortSignal,
-    outputProfile?: RuntimeOutputProfile
+    outputProfile?: RuntimeOutputProfile,
   ): Promise<RuntimeResult>;
   dispose(): Promise<void>;
 }

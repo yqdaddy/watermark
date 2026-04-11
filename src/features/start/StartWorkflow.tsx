@@ -3,7 +3,7 @@ import RestartAltRoundedIcon from "@mui/icons-material/RestartAltRounded";
 import ArrowBackIosNewRoundedIcon from "@mui/icons-material/ArrowBackIosNewRounded";
 import ArrowForwardIosRoundedIcon from "@mui/icons-material/ArrowForwardIosRounded";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
-import SaveRoundedIcon from "@mui/icons-material/SaveRounded"
+import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import LockOpenRoundedIcon from "@mui/icons-material/LockOpenRounded";
@@ -366,13 +366,16 @@ async function detectFileCodecSupport(file: File) {
       inputFile.getPrimaryAudioTrack(),
     ]);
 
-    const videoCodec = await readTrackCodec(videoTrack as {
-      codec?: string | null;
-      getDecoderConfig?: () => Promise<{ codec?: string } | null>;
-      canDecode?: () => Promise<boolean>;
-    } | null);
+    const videoCodec = await readTrackCodec(
+      videoTrack as {
+        codec?: string | null;
+        getDecoderConfig?: () => Promise<{ codec?: string } | null>;
+        canDecode?: () => Promise<boolean>;
+      } | null,
+    );
     if (videoCodec) {
-      const videoSupported = typeof videoTrack?.canDecode === "function" ? await videoTrack.canDecode() : true;
+      const videoSupported =
+        typeof videoTrack?.canDecode === "function" ? await videoTrack.canDecode() : true;
       if (!videoSupported) {
         console.warn("[media-codec-check] unsupported video codec", {
           file: fileTag,
@@ -382,13 +385,16 @@ async function detectFileCodecSupport(file: File) {
       }
     }
 
-    const audioCodec = await readTrackCodec(audioTrack as {
-      codec?: string | null;
-      getDecoderConfig?: () => Promise<{ codec?: string } | null>;
-      canDecode?: () => Promise<boolean>;
-    } | null);
+    const audioCodec = await readTrackCodec(
+      audioTrack as {
+        codec?: string | null;
+        getDecoderConfig?: () => Promise<{ codec?: string } | null>;
+        canDecode?: () => Promise<boolean>;
+      } | null,
+    );
     if (audioCodec) {
-      const audioSupported = typeof audioTrack?.canDecode === "function" ? await audioTrack.canDecode() : true;
+      const audioSupported =
+        typeof audioTrack?.canDecode === "function" ? await audioTrack.canDecode() : true;
       if (!audioSupported) {
         console.warn("[media-codec-check] unsupported audio codec", {
           file: fileTag,
@@ -411,7 +417,9 @@ async function detectFileCodecSupport(file: File) {
   }
 }
 
-async function detectMediaDimensions(file: File): Promise<{ width: number; height: number } | null> {
+async function detectMediaDimensions(
+  file: File,
+): Promise<{ width: number; height: number } | null> {
   try {
     if (file.type.startsWith("image/")) {
       const bitmap = await createImageBitmap(file);
@@ -469,12 +477,16 @@ export function StartWorkflow() {
   const [files, setFiles] = useState<File[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [templates, setTemplates] = useState<WatermarkTemplate[]>(builtInTemplates);
-  const [templateWorkspaces, setTemplateWorkspaces] = useState<Record<string, Record<string, string>>>({});
+  const [templateWorkspaces, setTemplateWorkspaces] = useState<
+    Record<string, Record<string, string>>
+  >({});
   const [activeConfigTarget, setActiveConfigTarget] = useState<"global" | string>("global");
   const [globalTemplateConfig, setGlobalTemplateConfig] = useState<TemplateConfigSnapshot>(
     createEmptyTemplateConfigSnapshot(),
   );
-  const [fileTemplateOverrides, setFileTemplateOverrides] = useState<Record<string, TemplateConfigSnapshot>>({});
+  const [fileTemplateOverrides, setFileTemplateOverrides] = useState<
+    Record<string, TemplateConfigSnapshot>
+  >({});
   const [evaluatedFields, setEvaluatedFields] = useState<ConfigFieldDescriptor[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [params, setParams] = useState<Record<string, unknown>>({});
@@ -491,14 +503,18 @@ export function StartWorkflow() {
   const [previewKind, setPreviewKind] = useState<"image" | "video" | "">("");
   const [previewWatermarked, setPreviewWatermarked] = useState(false);
   const [fileCodecSupportMap, setFileCodecSupportMap] = useState<Record<string, boolean>>({});
-  const [mediaDimensionMap, setMediaDimensionMap] = useState<Record<string, { width: number; height: number }>>({});
+  const [mediaDimensionMap, setMediaDimensionMap] = useState<
+    Record<string, { width: number; height: number }>
+  >({});
   const [failedFiles, setFailedFiles] = useState<string[]>([]);
   const [previewProgress, setPreviewProgress] = useState(0);
   const [previewProgressMessage, setPreviewProgressMessage] = useState("");
   const [zoomOpen, setZoomOpen] = useState(false);
   const [openColorFieldKey, setOpenColorFieldKey] = useState<string | null>(null);
   const [colorInputDraftMap, setColorInputDraftMap] = useState<Record<string, string>>({});
-  const [coordDraggingMap, setCoordDraggingMap] = useState<Record<string, { x: number; y: number }>>({});
+  const [coordDraggingMap, setCoordDraggingMap] = useState<
+    Record<string, { x: number; y: number }>
+  >({});
   const [generationWarning, setGenerationWarning] = useState("");
   const [generationWarningOpen, setGenerationWarningOpen] = useState(false);
   const [isPointerAdjusting, setIsPointerAdjusting] = useState(false);
@@ -589,15 +605,18 @@ export function StartWorkflow() {
   const hasActiveOverride =
     activeConfigTarget !== "global" && Boolean(fileTemplateOverrides[activeConfigTarget]);
   const webCodecsSupported = checkWebCodecsSupport();
-  const activeFileSupported = currentFile ? fileCodecSupportMap[getFileCacheKey(currentFile)] : true;
+  const activeFileSupported = currentFile
+    ? fileCodecSupportMap[getFileCacheKey(currentFile)]
+    : true;
   const showUnsupportedCodecWarning = Boolean(currentFile && activeFileSupported === false);
   const showUnsupportedWebCodecsWarning = Boolean(
-    currentFile &&
-      currentFile.type.startsWith("video/") &&
-      !webCodecsSupported,
+    currentFile && currentFile.type.startsWith("video/") && !webCodecsSupported,
   );
-  const activeMediaDimensions = currentFile ? mediaDimensionMap[getFileCacheKey(currentFile)] : undefined;
-  const hasStartDraft = files.length > 0 || Boolean(selectedTemplateId) || Object.keys(params).length > 0;
+  const activeMediaDimensions = currentFile
+    ? mediaDimensionMap[getFileCacheKey(currentFile)]
+    : undefined;
+  const hasStartDraft =
+    files.length > 0 || Boolean(selectedTemplateId) || Object.keys(params).length > 0;
   const previewSignature = useMemo(
     () => JSON.stringify({ params, activeIndex, selectedTemplateId, isMainThreadDebugMode }),
     [params, activeIndex, selectedTemplateId, isMainThreadDebugMode],
@@ -690,8 +709,11 @@ export function StartWorkflow() {
   }, [fileValidation]);
 
   const canGenerate = files.length > 0 && invalidFileValidation.length === 0;
-  const currentFileIssue = currentFile ? invalidFileReasonByKey[getFileCacheKey(currentFile)] ?? "" : "";
-  const canPreview = Boolean(currentFile) && Boolean(selectedTemplate) && isParamComplete && !currentFileIssue;
+  const currentFileIssue = currentFile
+    ? (invalidFileReasonByKey[getFileCacheKey(currentFile)] ?? "")
+    : "";
+  const canPreview =
+    Boolean(currentFile) && Boolean(selectedTemplate) && isParamComplete && !currentFileIssue;
 
   function getCurrentTemplateConfigSnapshot(): TemplateConfigSnapshot {
     return {
@@ -780,7 +802,9 @@ export function StartWorkflow() {
   async function resolveWorkspaceFiles(template: WatermarkTemplate) {
     return (
       templateWorkspaces[template.id] ??
-      (template.builtInWorkspaceId ? await loadBuiltInTemplateWorkspace(template.builtInWorkspaceId) : null)
+      (template.builtInWorkspaceId
+        ? await loadBuiltInTemplateWorkspace(template.builtInWorkspaceId)
+        : null)
     );
   }
 
@@ -927,7 +951,10 @@ export function StartWorkflow() {
     }
   }
 
-  async function ensureEvaluationSession(template: WatermarkTemplate, workspaceFiles: Record<string, string>) {
+  async function ensureEvaluationSession(
+    template: WatermarkTemplate,
+    workspaceFiles: Record<string, string>,
+  ) {
     if (evaluationSessionRef.current) {
       return evaluationSessionRef.current;
     }
@@ -993,7 +1020,10 @@ export function StartWorkflow() {
     return editable;
   }
 
-  async function initializeTemplateEvaluation(template: WatermarkTemplate, workspaceFiles: Record<string, string> | null) {
+  async function initializeTemplateEvaluation(
+    template: WatermarkTemplate,
+    workspaceFiles: Record<string, string> | null,
+  ) {
     await disposeEvaluationSession();
 
     if (!workspaceFiles) {
@@ -1072,8 +1102,10 @@ export function StartWorkflow() {
     outputProfile?: RuntimeOutputProfile;
   }): Promise<RuntimeResult> {
     const runtimeLogger = {
-      info: (...args: unknown[]) => console.info(`[template-runtime][${options.loggerScope}]`, ...args),
-      error: (...args: unknown[]) => console.error(`[template-runtime][${options.loggerScope}]`, ...args),
+      info: (...args: unknown[]) =>
+        console.info(`[template-runtime][${options.loggerScope}]`, ...args),
+      error: (...args: unknown[]) =>
+        console.error(`[template-runtime][${options.loggerScope}]`, ...args),
       progress: (percent: number) => options.updateProgress(percent),
     };
 
@@ -1416,7 +1448,16 @@ export function StartWorkflow() {
     };
     // onPreview depends on many mutable states; this effect intentionally tracks core gating inputs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params, canPreview, selectedTemplate, currentFile, state, loadingSchema, isMainThreadDebugMode, isPointerAdjusting]);
+  }, [
+    params,
+    canPreview,
+    selectedTemplate,
+    currentFile,
+    state,
+    loadingSchema,
+    isMainThreadDebugMode,
+    isPointerAdjusting,
+  ]);
 
   async function onDrop(input: FileList | null) {
     if (!input) return;
@@ -1466,7 +1507,9 @@ export function StartWorkflow() {
       });
     }
 
-    const uncachedDimensionFiles = merged.filter((file) => mediaDimensionMap[getFileCacheKey(file)] === undefined);
+    const uncachedDimensionFiles = merged.filter(
+      (file) => mediaDimensionMap[getFileCacheKey(file)] === undefined,
+    );
     if (uncachedDimensionFiles.length > 0) {
       const entries = await Promise.all(
         uncachedDimensionFiles.map(async (file) => {
@@ -1546,11 +1589,18 @@ export function StartWorkflow() {
       const generatedAssets: GeneratedAsset[] = [];
       const failedItems: Array<{ name: string; reason: string }> = [];
 
-      const setFileProgress = (fileIndex: number, fileProgressPercent: number, fileName: string) => {
+      const setFileProgress = (
+        fileIndex: number,
+        fileProgressPercent: number,
+        fileName: string,
+      ) => {
         const normalized = Math.max(0, Math.min(100, Math.round(fileProgressPercent)));
         const overall = Math.max(
           0,
-          Math.min(100, Math.round((fileIndex + normalized / 100) / Math.max(1, files.length) * 100)),
+          Math.min(
+            100,
+            Math.round(((fileIndex + normalized / 100) / Math.max(1, files.length)) * 100),
+          ),
         );
         setProgress(overall);
         setProgressMessage(`总进度 ${overall}% | 处理中: ${fileName} (${normalized}%)`);
@@ -1580,7 +1630,8 @@ export function StartWorkflow() {
               entry: "index.ts",
               logger: {
                 info: () => undefined,
-                error: (...args: unknown[]) => console.error("[template-runtime][evaluate]", ...args),
+                error: (...args: unknown[]) =>
+                  console.error("[template-runtime][evaluate]", ...args),
               },
               logPrefix: "template-main-thread-evaluate",
             });
@@ -1671,7 +1722,6 @@ export function StartWorkflow() {
       setFailedFiles(failedItems.map((item) => `${item.name}（${item.reason}）`));
       setState("finished");
       notifyGenerationFinished(generatedAssets.length);
-
     } catch (generateError) {
       console.error("[start-workflow][generate] failed", { error: generateError });
       setError(generateError instanceof Error ? generateError.message : "生成失败");
@@ -1821,8 +1871,7 @@ export function StartWorkflow() {
               p: 2,
               textAlign: "center",
               cursor: "pointer",
-              background:
-                "linear-gradient(140deg, rgba(255,255,255,.78), rgba(222,235,255,.64))",
+              background: "linear-gradient(140deg, rgba(255,255,255,.78), rgba(222,235,255,.64))",
             }}
           >
             <CloudUploadRoundedIcon sx={{ fontSize: 30 }} />
@@ -2057,7 +2106,11 @@ export function StartWorkflow() {
                 type="number"
                 value={sizeValue.width}
                 onChange={(event) =>
-                  updateSizeField(field.key, toFiniteNumber(event.target.value, sizeValue.width), sizeValue.height)
+                  updateSizeField(
+                    field.key,
+                    toFiniteNumber(event.target.value, sizeValue.width),
+                    sizeValue.height,
+                  )
                 }
               />
               <TextField
@@ -2065,7 +2118,11 @@ export function StartWorkflow() {
                 type="number"
                 value={sizeValue.height}
                 onChange={(event) =>
-                  updateSizeField(field.key, sizeValue.width, toFiniteNumber(event.target.value, sizeValue.height))
+                  updateSizeField(
+                    field.key,
+                    sizeValue.width,
+                    toFiniteNumber(event.target.value, sizeValue.height),
+                  )
                 }
               />
             </Stack>
@@ -2127,9 +2184,17 @@ export function StartWorkflow() {
           if (direction.includes("n")) nextHeight = startH - deltaHeight;
 
           if (ratioLocked) {
-            if ((direction === "e" || direction === "w") && !direction.includes("n") && !direction.includes("s")) {
+            if (
+              (direction === "e" || direction === "w") &&
+              !direction.includes("n") &&
+              !direction.includes("s")
+            ) {
               nextHeight = nextWidth / Math.max(0.0001, baseRatio);
-            } else if ((direction === "n" || direction === "s") && !direction.includes("e") && !direction.includes("w")) {
+            } else if (
+              (direction === "n" || direction === "s") &&
+              !direction.includes("e") &&
+              !direction.includes("w")
+            ) {
               nextWidth = nextHeight * baseRatio;
             } else {
               if (Math.abs(deltaX) >= Math.abs(deltaY)) {
@@ -2184,11 +2249,31 @@ export function StartWorkflow() {
         target.addEventListener("pointercancel", onPointerUp);
       };
 
-      const handles: Array<{ key: "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw"; sx: Record<string, unknown>; cursor: string }> = [
-        { key: "n", cursor: "ns-resize", sx: { top: -6, left: "50%", transform: "translateX(-50%)" } },
-        { key: "s", cursor: "ns-resize", sx: { bottom: -6, left: "50%", transform: "translateX(-50%)" } },
-        { key: "e", cursor: "ew-resize", sx: { right: -6, top: "50%", transform: "translateY(-50%)" } },
-        { key: "w", cursor: "ew-resize", sx: { left: -6, top: "50%", transform: "translateY(-50%)" } },
+      const handles: Array<{
+        key: "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
+        sx: Record<string, unknown>;
+        cursor: string;
+      }> = [
+        {
+          key: "n",
+          cursor: "ns-resize",
+          sx: { top: -6, left: "50%", transform: "translateX(-50%)" },
+        },
+        {
+          key: "s",
+          cursor: "ns-resize",
+          sx: { bottom: -6, left: "50%", transform: "translateX(-50%)" },
+        },
+        {
+          key: "e",
+          cursor: "ew-resize",
+          sx: { right: -6, top: "50%", transform: "translateY(-50%)" },
+        },
+        {
+          key: "w",
+          cursor: "ew-resize",
+          sx: { left: -6, top: "50%", transform: "translateY(-50%)" },
+        },
         { key: "ne", cursor: "nesw-resize", sx: { right: -6, top: -6 } },
         { key: "nw", cursor: "nwse-resize", sx: { left: -6, top: -6 } },
         { key: "se", cursor: "nwse-resize", sx: { right: -6, bottom: -6 } },
@@ -2209,8 +2294,7 @@ export function StartWorkflow() {
               height: panelHeight,
               borderRadius: 1,
               border: "1px dashed rgba(61, 86, 164, .35)",
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,.58), rgba(237,243,255,.48))",
+              background: "linear-gradient(180deg, rgba(255,255,255,.58), rgba(237,243,255,.48))",
               overflow: "hidden",
               touchAction: "none",
             }}
@@ -2252,9 +2336,14 @@ export function StartWorkflow() {
               ))}
             </Box>
           </Box>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems="center" style={{
-            alignSelf: 'center'
-          }}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1}
+            alignItems="center"
+            style={{
+              alignSelf: "center",
+            }}
+          >
             <TextField
               label="宽度"
               type="number"
@@ -2327,7 +2416,11 @@ export function StartWorkflow() {
                 type="number"
                 value={coordValue.x}
                 onChange={(event) =>
-                  updateCoordField(field.key, toFiniteNumber(event.target.value, coordValue.x), coordValue.y)
+                  updateCoordField(
+                    field.key,
+                    toFiniteNumber(event.target.value, coordValue.x),
+                    coordValue.y,
+                  )
                 }
               />
               <TextField
@@ -2335,7 +2428,11 @@ export function StartWorkflow() {
                 type="number"
                 value={coordValue.y}
                 onChange={(event) =>
-                  updateCoordField(field.key, coordValue.x, toFiniteNumber(event.target.value, coordValue.y))
+                  updateCoordField(
+                    field.key,
+                    coordValue.x,
+                    toFiniteNumber(event.target.value, coordValue.y),
+                  )
                 }
               />
             </Stack>
@@ -2380,7 +2477,9 @@ export function StartWorkflow() {
               当前坐标 ({Math.round(displayCoord.x)}, {Math.round(displayCoord.y)})
             </Typography>
             <Typography variant="caption" color="text.secondary" fontWeight={700}>
-              {hasResolution ? `参考分辨率 ${mediaWidth} x ${mediaHeight}` : "正在读取媒体分辨率..."}
+              {hasResolution
+                ? `参考分辨率 ${mediaWidth} x ${mediaHeight}`
+                : "正在读取媒体分辨率..."}
             </Typography>
           </Stack>
           <Box
@@ -2433,7 +2532,7 @@ export function StartWorkflow() {
               width: "100%",
               maxWidth: panelWidth,
               height: panelHeight,
-              alignSelf: 'center',
+              alignSelf: "center",
               borderRadius: 1.2,
               border: "1px solid rgba(61, 86, 164, .35)",
               overflow: "hidden",
@@ -2486,14 +2585,26 @@ export function StartWorkflow() {
               type="number"
               value={coordValue.x}
               disabled={!hasResolution}
-              onChange={(event) => updateCoordField(field.key, toFiniteNumber(event.target.value, coordValue.x), coordValue.y)}
+              onChange={(event) =>
+                updateCoordField(
+                  field.key,
+                  toFiniteNumber(event.target.value, coordValue.x),
+                  coordValue.y,
+                )
+              }
             />
             <TextField
               label="y 坐标"
               type="number"
               value={coordValue.y}
               disabled={!hasResolution}
-              onChange={(event) => updateCoordField(field.key, coordValue.x, toFiniteNumber(event.target.value, coordValue.y))}
+              onChange={(event) =>
+                updateCoordField(
+                  field.key,
+                  coordValue.x,
+                  toFiniteNumber(event.target.value, coordValue.y),
+                )
+              }
             />
           </Stack>
           {field.description ? (
@@ -2514,7 +2625,9 @@ export function StartWorkflow() {
         type={field.kind === "number" ? "number" : "text"}
         placeholder={field.description}
         helperText={field.description}
-        value={typeof scalarValue === "string" || typeof scalarValue === "number" ? scalarValue : ""}
+        value={
+          typeof scalarValue === "string" || typeof scalarValue === "number" ? scalarValue : ""
+        }
         onChange={(event) =>
           setParams((prev) => ({
             ...prev,
@@ -2670,7 +2783,11 @@ export function StartWorkflow() {
                             key={file.name + idx}
                             label={file.name}
                             size="small"
-                            color={idx === activeIndex && activeConfigTarget === fileKey ? "primary" : "default"}
+                            color={
+                              idx === activeIndex && activeConfigTarget === fileKey
+                                ? "primary"
+                                : "default"
+                            }
                             onClick={() => {
                               setActiveIndex(idx);
                               switchToConfigTarget(fileKey);
@@ -2717,7 +2834,12 @@ export function StartWorkflow() {
               <Card sx={{ borderRadius: 1.25 }}>
                 <CardContent>
                   <Stack spacing={1.6}>
-                    <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      spacing={1}
+                    >
                       <Typography fontWeight={700}>模板</Typography>
                       {activeConfigTarget !== "global" ? (
                         <Button
