@@ -1,0 +1,72 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&family=Noto+Sans+SC:wght@400;500;700;800&display=swap");
+
+:root {
+  --app-bg: radial-gradient(circle at 18% 0%, #e7f0ff, #f7fbff 42%, #eef5ff);
+  --ink-strong: #14203d;
+  --ink-soft: #51607f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Space Grotesk", "Noto Sans SC", sans-serif;
+  color: var(--ink-strong);
+  background: var(--app-bg);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+  animation: page-enter 0.42s ease-out;
+}
+
+input,
+textarea,
+select,
+[contenteditable="true"],
+[contenteditable="plaintext-only"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-stagger > * {
+  animation: fade-item 0.45s ease both;
+}
+
+.fade-stagger > *:nth-child(2) {
+  animation-delay: 0.06s;
+}
+
+.fade-stagger > *:nth-child(3) {
+  animation-delay: 0.12s;
+}
+
+@keyframes fade-item {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "schema": ["./src/template/schema/index.ts"]
+    }
+  },
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}

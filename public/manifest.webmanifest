@@ -1,0 +1,23 @@
+{
+  "name": "水印",
+  "short_name": "水印",
+  "description": "离线可用的图片与视频动态水印工具",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f7ff",
+  "theme_color": "#355ec9",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
