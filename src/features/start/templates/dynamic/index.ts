@@ -255,7 +255,6 @@ export default async function App(
 
   const output = imageOrVideo.output();
   const canvas = output.source;
-  PIXI.DOMAdapter.set(PIXI.WebWorkerAdapter);
   const app = new PIXI.Application();
   await app.init({
     canvas,

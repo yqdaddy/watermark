@@ -91,7 +91,7 @@ export class Config {
   textBackgroundSize = { width: 0, height: 0 };
 
   @schema.group("样式")
-  @schema.number("Size", { description: "相对画面的文字大小" })
+  @schema.number("文字大小", { description: "相对画面的文字大小" })
   size = 100;
 
   @schema.group("样式")
@@ -305,7 +305,6 @@ export default async function App(
 
   const output = imageOrVideo.output();
   const canvas = output.source;
-  PIXI.DOMAdapter.set(PIXI.WebWorkerAdapter);
   const app = new PIXI.Application();
   await app.init({
     canvas,

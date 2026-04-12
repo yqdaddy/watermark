@@ -51,7 +51,15 @@ interface PixiApplicationLike {
   ) => void;
 }
 
+interface PixiExtensionsLike {
+  _addHandlers?: Record<string, unknown>;
+  _removeHandlers?: Record<string, unknown>;
+  handle?: (type: string, onAdd: (ext: unknown) => void, onRemove: (ext: unknown) => void) => unknown;
+  __templatePatchedHandle?: boolean;
+}
+
 let pixiRuntimeLifecycleGuardsApplied = false;
+let pixiRuntimeEnvironmentInitialized = false;
 let webCodecsGuardsApplied = false;
 
 function toArrayBuffer(input: AllowSharedBufferSource): ArrayBuffer {
@@ -252,6 +260,27 @@ function ensurePixiRuntimeLifecycleGuards() {
   }
   pixiRuntimeLifecycleGuardsApplied = true;
 
+  const pixiExtensions = (PIXI as unknown as { extensions?: PixiExtensionsLike }).extensions;
+  if (
+    pixiExtensions &&
+    typeof pixiExtensions.handle === "function" &&
+    !pixiExtensions.__templatePatchedHandle
+  ) {
+    const originalHandle = pixiExtensions.handle;
+    pixiExtensions.handle = function patchedHandle(type, onAdd, onRemove) {
+      // Safari/WebKit occasionally double-evaluates PIXI init path inside template runtime.
+      if (
+        (type === "texture-source" || type === "environment") &&
+        (this._addHandlers?.[type] || this._removeHandlers?.[type])
+      ) {
+        return this;
+      }
+
+      return originalHandle.call(this, type, onAdd, onRemove);
+    };
+    pixiExtensions.__templatePatchedHandle = true;
+  }
+
   const texturePool = (PIXI as unknown as { TexturePool?: PixiTexturePoolLike }).TexturePool;
   if (texturePool && typeof texturePool.clear === "function") {
     const originalTexturePoolClear = texturePool.clear.bind(texturePool);
@@ -281,6 +310,30 @@ function ensurePixiRuntimeLifecycleGuards() {
         options,
       );
     };
+  }
+}
+
+function ensurePixiRuntimeEnvironment() {
+  if (pixiRuntimeEnvironmentInitialized) {
+    return;
+  }
+  pixiRuntimeEnvironmentInitialized = true;
+
+  const isWorkerRuntime =
+    typeof WorkerGlobalScope !== "undefined" && globalThis instanceof WorkerGlobalScope;
+
+  if (!isWorkerRuntime) {
+    return;
+  }
+
+  const domAdapter = (PIXI as unknown as {
+    DOMAdapter?: { set?: (adapter: unknown) => void };
+    WebWorkerAdapter?: unknown;
+  }).DOMAdapter;
+  const webWorkerAdapter = (PIXI as unknown as { WebWorkerAdapter?: unknown }).WebWorkerAdapter;
+
+  if (domAdapter && typeof domAdapter.set === "function" && webWorkerAdapter) {
+    domAdapter.set(webWorkerAdapter);
   }
 }
 
@@ -1067,6 +1120,8 @@ export async function executeTemplateApp(options: {
   signal?: AbortSignal;
 }) {
   ensureWebCodecsLifecycleGuards();
+  ensurePixiRuntimeLifecycleGuards();
+  ensurePixiRuntimeEnvironment();
 
   const progressBridge = createFrameProgressBridge(options.logger.progress);
   const input = await createMediaInput(
@@ -1101,10 +1156,10 @@ export async function loadTemplateModule(
   moduleOrder: string[];
 }> {
   ensureWebCodecsLifecycleGuards();
+  ensurePixiRuntimeLifecycleGuards();
+  ensurePixiRuntimeEnvironment();
 
   const bundle = await compileTemplateWorkspace(files, entry);
-
-  ensurePixiRuntimeLifecycleGuards();
 
   (
     globalThis as typeof globalThis & { __templateBuiltins?: Record<string, unknown> }
