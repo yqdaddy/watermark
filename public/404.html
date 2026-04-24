@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/watermark/favicon.svg" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1, maximum-scale=1"
+    />
+    <meta name="theme-color" content="#355ec9" />
+
+    <title>水印 - 安全高效的在线水印工具</title>
+    <meta
+      name="description"
+      content="开源免费、安全、可自定义的本地在线加水印工具。数据完全离线处理。"
+    />
+    <meta name="keywords" content="水印,加水印,在线水印,图片加水印,视频水印,隐私保护,watermark" />
+    <meta name="author" content="Watermark" />
+
+    <!-- GitHub Pages SPA redirect -->
+    <script>
+      // SPA redirect: 404.html redirects to index.html with path stored
+      var pathSegmentsToKeep = 1; // Keep '/watermark'
+      var l = window.location;
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+        l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/')
+      );
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/watermark/src/main.tsx"></script>
+  </body>
+</html>

@@ -18,25 +18,42 @@
     <meta name="author" content="Watermark" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://wt.65536.dev/" />
+    <meta property="og:url" content="https://yqdaddy.github.io/watermark/" />
     <meta property="og:title" content="水印 - 安全高效的在线水印工具" />
     <meta
       property="og:description"
       content="开源免费、安全、可自定义的本地在线加水印工具。数据完全离线处理。"
     />
-    <meta property="og:image" content="https://wt.65536.dev/favicon.svg" />
+    <meta property="og:image" content="https://yqdaddy.github.io/watermark/favicon.svg" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://wt.65536.dev/" />
+    <meta name="twitter:url" content="https://yqdaddy.github.io/watermark/" />
     <meta name="twitter:title" content="水印 - 安全高效的在线水印工具" />
     <meta
       name="twitter:description"
       content="开源免费、安全、可自定义的本地在线加水印工具。数据完全离线处理。"
     />
-    <meta name="twitter:image" content="https://wt.65536.dev/favicon.svg" />
+    <meta name="twitter:image" content="https://yqdaddy.github.io/watermark/favicon.svg" />
   </head>
   <body>
     <div id="root"></div>
+    <!-- GitHub Pages SPA redirect: restore path from 404 redirect -->
+    <script>
+      (function() {
+        var pathSegmentsToKeep = 1; // Keep '/watermark'
+        var l = window.location;
+        if (l.search[1] === '/') {
+          var decoded = l.search.slice(1).split('&').map(function(s) {
+            return s.replace(/~and~/g, '&');
+          }).join('?');
+          window.history.replaceState(null, null,
+            l.pathname.slice(0, pathSegmentsToKeep + 1) +
+            decoded +
+            l.hash
+          );
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
