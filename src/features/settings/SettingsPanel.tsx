@@ -4,7 +4,6 @@ import {
   CardContent,
   Divider,
   FormControlLabel,
-  Link,
   Stack,
   Switch,
   TextField,
@@ -56,40 +55,10 @@ export function SettingsPanel() {
 
       <Card sx={{ borderRadius: 1.25 }}>
         <CardContent>
-          <Stack spacing={0.9}>
-            <Typography fontWeight={700}>关于</Typography>
-            <Typography variant="body2" color="text.secondary">
-              版本: v{__APP_VERSION__} (GitHub:{" "}
-              <Link href="https://github.com/FurryR/watermark">FurryR/watermark</Link>)
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Made with love by FurryR
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              GitHub:{" "}
-              <Link href="https://github.com/FurryR" target="_blank" rel="noopener noreferrer">
-                https://github.com/FurryR
-              </Link>
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              X:{" "}
-              <Link href="https://x.com/im_furryr" target="_blank" rel="noopener noreferrer">
-                @im_furryr
-              </Link>
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Website:{" "}
-              <Link href="https://furryr.is-a.dev" target="_blank" rel="noopener noreferrer">
-                furryr.is-a.dev
-              </Link>
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              协助托管：{" "}
-              <Link href="https://github.com/foxderin" target="_blank" rel="noopener noreferrer">
-                @foxderin (玻狸)
-              </Link>
-            </Typography>
-          </Stack>
+          <Typography fontWeight={700}>关于</Typography>
+          <Typography variant="body2" color="text.secondary">
+            版本: v{__APP_VERSION__}
+          </Typography>
         </CardContent>
       </Card>
     </Stack>

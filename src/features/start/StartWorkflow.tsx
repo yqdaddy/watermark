@@ -3221,22 +3221,6 @@ export function StartWorkflow() {
           </Alert>
         </Snackbar>
       </Stack>
-
-      <Typography
-        variant="caption"
-        color="text.disabled"
-        sx={{
-          position: "fixed",
-          left: 0,
-          right: 0,
-          bottom: 64,
-          textAlign: "center",
-          pointerEvents: "none",
-          zIndex: 2,
-        }}
-      >
-        Made with love by FurryR
-      </Typography>
     </Box>
   );
 }
