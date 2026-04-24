@@ -11,7 +11,7 @@ const packageJson = JSON.parse(
 };
 
 export default defineConfig({
-  base: "/watermark/",
+  base: "/",
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version ?? "0.0.0"),
   },
