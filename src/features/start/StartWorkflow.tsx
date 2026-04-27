@@ -19,6 +19,7 @@ import {
   Fab,
   LinearProgress,
   MenuItem,
+  ListSubheader,
   Switch,
   FormControlLabel,
   IconButton,
@@ -34,7 +35,7 @@ import { HexAlphaColorPicker } from "react-colorful";
 import { builtInTemplates } from "./mockTemplates";
 import { exportAsZip, simulateGenerate } from "./pipelineStub";
 import type { GeneratedAsset, StepState, WatermarkTemplate } from "./types";
-import { importTemplateZip } from "../../utils/zip/templateZip";
+import { importTemplateZip, type SavedParamTemplateImport, type TemplateFiles } from "../../utils/zip/templateZip";
 import { loadBuiltInTemplateWorkspace } from "./templates/builtInTemplateLoader";
 import type { ConfigFieldDescriptor } from "../../template/runtime/workerProtocol";
 import {
@@ -45,6 +46,10 @@ import {
 import type { RuntimeOutputProfile } from "../../template/runtime/workerProtocol";
 import { useRuntimeSettings } from "../settings/runtimeSettings";
 import { useUnsavedChangesGuard } from "../../unsavedChangesGuard";
+import { useSavedParamTemplates } from "./savedParamTemplates/provider";
+import { SaveAsTemplateDialog } from "./savedParamTemplates/SaveAsTemplateDialog";
+import type { SavedParamTemplate } from "./savedParamTemplates/types";
+import { InteractivePositionEditor } from "./InteractivePositionEditor";
 
 const acceptTypes = [
   "image/jpeg",
@@ -474,8 +479,16 @@ export function StartWorkflow() {
   const evaluateRequestIdRef = useRef(0);
   const { settings } = useRuntimeSettings();
   const { setNavigationBlocked, setHasUnsavedChanges } = useUnsavedChangesGuard();
+  const {
+    templates: savedParamTemplates,
+    saveTemplate: saveSavedTemplate,
+    updateTemplate: updateSavedTemplate,
+  } = useSavedParamTemplates();
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [activeSavedTemplateId, setActiveSavedTemplateId] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [filePreviewUrlMap, setFilePreviewUrlMap] = useState<Record<string, string>>({});
   const [templates, setTemplates] = useState<WatermarkTemplate[]>(builtInTemplates);
   const [templateWorkspaces, setTemplateWorkspaces] = useState<
     Record<string, Record<string, string>>
@@ -525,7 +538,21 @@ export function StartWorkflow() {
   const isMainThreadDebugMode = settings.useMainThreadRender;
   const runtimeMode: "worker" | "main-thread" = isMainThreadDebugMode ? "main-thread" : "worker";
 
-  const selectedTemplate = templates.find((item) => item.id === selectedTemplateId);
+  const selectedTemplate = useMemo(() => {
+    // 先从 templates 中查找
+    const template = templates.find((item) => item.id === selectedTemplateId);
+    if (template) return template;
+
+    // 如果找不到且存在 activeSavedTemplateId，则查找来源模版
+    if (activeSavedTemplateId) {
+      const savedTemplate = savedParamTemplates.find((t) => t.id === activeSavedTemplateId);
+      if (savedTemplate) {
+        return templates.find((item) => item.id === savedTemplate.sourceTemplateId);
+      }
+    }
+
+    return undefined;
+  }, [selectedTemplateId, templates, activeSavedTemplateId, savedParamTemplates]);
   const groupedVisibleSchemaFields = useMemo(() => {
     const roots: FieldGroupNode[] = [];
     const rootNode: FieldGroupNode = {
@@ -571,24 +598,42 @@ export function StartWorkflow() {
     };
   }, [evaluatedFields]);
   const availableTemplates = useMemo(() => {
-    if (files.length === 0) {
-      return templates;
-    }
+    let baseTemplates: WatermarkTemplate[];
 
-    if (activeConfigTarget === "global") {
-      return templates.filter((template) =>
+    if (files.length === 0) {
+      baseTemplates = templates;
+    } else if (activeConfigTarget === "global") {
+      baseTemplates = templates.filter((template) =>
         files.every((file) => templateSupportsMedia(template, getFileMediaType(file))),
       );
+    } else {
+      const targetFile = files.find((file) => getFileCacheKey(file) === activeConfigTarget);
+      if (!targetFile) {
+        baseTemplates = templates;
+      } else {
+        const targetMediaType = getFileMediaType(targetFile);
+        baseTemplates = templates.filter((template) => templateSupportsMedia(template, targetMediaType));
+      }
     }
 
-    const targetFile = files.find((file) => getFileCacheKey(file) === activeConfigTarget);
-    if (!targetFile) {
-      return templates;
-    }
+    // 将已保存模版转换为虚拟模版并合并
+    const savedTemplatesAsItems: WatermarkTemplate[] = savedParamTemplates
+      .filter((saved) => {
+        // 过滤：来源模版必须在 baseTemplates 中
+        return baseTemplates.some((t) => t.id === saved.sourceTemplateId);
+      })
+      .map((saved) => ({
+        id: saved.id,
+        name: saved.name,
+        mediaType: saved.mediaType,
+        fields: [],
+        builtInWorkspaceId: undefined,
+        isSavedParamTemplate: true,
+        sourceTemplateId: saved.sourceTemplateId,
+      }));
 
-    const targetMediaType = getFileMediaType(targetFile);
-    return templates.filter((template) => templateSupportsMedia(template, targetMediaType));
-  }, [activeConfigTarget, files, templates]);
+    return [...baseTemplates, ...savedTemplatesAsItems];
+  }, [activeConfigTarget, files, templates, savedParamTemplates]);
 
   const isParamComplete = useMemo(() => {
     if (!selectedTemplate) return false;
@@ -1484,6 +1529,31 @@ export function StartWorkflow() {
       return merged;
     });
 
+    // 创建图片文件预览URL
+    const newPreviewUrls: Record<string, string> = {};
+    for (const file of next) {
+      if (file.type.startsWith("image/")) {
+        const key = getFileCacheKey(file);
+        const existing = merged.find(
+          (item) =>
+            item.name === file.name &&
+            item.size === file.size &&
+            item.lastModified === file.lastModified,
+        );
+        if (existing) {
+          newPreviewUrls[key] = URL.createObjectURL(file);
+        }
+      }
+    }
+
+    setFilePreviewUrlMap((prev) => {
+      // 清理旧的URL
+      for (const url of Object.values(prev)) {
+        URL.revokeObjectURL(url);
+      }
+      return { ...prev, ...newPreviewUrls };
+    });
+
     const uncachedVideoFiles = merged.filter((file) => {
       if (!file.type.startsWith("video/")) return false;
       return fileCodecSupportMap[getFileCacheKey(file)] === undefined;
@@ -1545,16 +1615,59 @@ export function StartWorkflow() {
 
     try {
       const importedFiles = await importTemplateZip(file);
-      const dynamicTemplate: WatermarkTemplate = {
-        id: `custom-${Date.now()}`,
-        name: `自定义模板 · ${file.name}`,
-        mediaType: "both",
-        fields: [],
-      };
-      setTemplateWorkspaces((prev) => ({ ...prev, [dynamicTemplate.id]: importedFiles }));
-      setTemplates((prev) => [dynamicTemplate, ...prev]);
-      setSelectedTemplateId(dynamicTemplate.id);
-      await initializeTemplateEvaluation(dynamicTemplate, importedFiles);
+
+      // 检查导入类型
+      if (typeof importedFiles === "object" && "type" in importedFiles && importedFiles.type === "saved-param-template") {
+        // 用户保存的参数模版
+        const savedImport = importedFiles as SavedParamTemplateImport;
+        const { savedTemplate, workspaceFiles } = savedImport;
+
+        // 保存到存储
+        saveSavedTemplate(savedTemplate);
+
+        // 如果来源模版不存在，需要添加
+        const sourceTemplate = templates.find((t) => t.id === savedTemplate.sourceTemplateId);
+        if (!sourceTemplate) {
+          // 创建虚拟来源模版
+          const dynamicTemplate: WatermarkTemplate = {
+            id: savedTemplate.sourceTemplateId,
+            name: savedTemplate.sourceTemplateName,
+            mediaType: savedTemplate.mediaType,
+            fields: [],
+            builtInWorkspaceId: undefined,
+          };
+          setTemplateWorkspaces((prev) => ({
+            ...prev,
+            [savedTemplate.sourceTemplateId]: workspaceFiles,
+          }));
+          setTemplates((prev) => [dynamicTemplate, ...prev]);
+          setSelectedTemplateId(savedTemplate.sourceTemplateId);
+          await initializeTemplateEvaluation(dynamicTemplate, workspaceFiles);
+        } else {
+          // 来源模版已存在，直接加载参数
+          setSelectedTemplateId(savedTemplate.sourceTemplateId);
+          setParams(savedTemplate.params);
+          setNormalizedParams(savedTemplate.normalizedParams);
+          setActiveSavedTemplateId(savedTemplate.id);
+
+          const workspaceFilesForSource =
+            templateWorkspaces[savedTemplate.sourceTemplateId] ?? await resolveWorkspaceFiles(sourceTemplate);
+          await initializeTemplateEvaluation(sourceTemplate, workspaceFilesForSource);
+        }
+      } else {
+        // 普通自定义模版
+        const templateFiles = importedFiles as TemplateFiles;
+        const dynamicTemplate: WatermarkTemplate = {
+          id: `custom-${Date.now()}`,
+          name: `自定义模板 · ${file.name}`,
+          mediaType: "both",
+          fields: [],
+        };
+        setTemplateWorkspaces((prev) => ({ ...prev, [dynamicTemplate.id]: templateFiles }));
+        setTemplates((prev) => [dynamicTemplate, ...prev]);
+        setSelectedTemplateId(dynamicTemplate.id);
+        await initializeTemplateEvaluation(dynamicTemplate, templateFiles);
+      }
     } catch (templateError) {
       setError(templateError instanceof Error ? templateError.message : "模板读取失败");
     }
@@ -1784,19 +1897,47 @@ export function StartWorkflow() {
   }
 
   async function onTemplateChange(templateId: string) {
-    setSelectedTemplateId(templateId);
-    const template = templates.find((item) => item.id === templateId);
-    if (!template) return;
+    // 检查是否为已保存模版
+    const savedTemplate = savedParamTemplates.find((t) => t.id === templateId);
 
-    const workspaceFiles = await resolveWorkspaceFiles(template);
+    if (savedTemplate) {
+      // 加载已保存模版
+      setSelectedTemplateId(savedTemplate.id); // 保持为 savedTemplate.id
+      setParams(savedTemplate.params);
+      setNormalizedParams(savedTemplate.normalizedParams);
+      setActiveSavedTemplateId(savedTemplate.id);
 
-    try {
-      setLoadingSchema(true);
-      await initializeTemplateEvaluation(template, workspaceFiles);
-    } catch (schemaError) {
-      setError(schemaError instanceof Error ? schemaError.message : "模板参数解析失败");
-    } finally {
-      setLoadingSchema(false);
+      // 仍需初始化 runtime 以获取 evaluatedFields
+      const sourceTemplate = templates.find((item) => item.id === savedTemplate.sourceTemplateId);
+      if (!sourceTemplate) return;
+
+      const workspaceFiles = await resolveWorkspaceFiles(sourceTemplate);
+
+      try {
+        setLoadingSchema(true);
+        await initializeTemplateEvaluation(sourceTemplate, workspaceFiles);
+      } catch (schemaError) {
+        setError(schemaError instanceof Error ? schemaError.message : "模板参数解析失败");
+      } finally {
+        setLoadingSchema(false);
+      }
+    } else {
+      // 普通模版逻辑
+      setActiveSavedTemplateId(null);
+      setSelectedTemplateId(templateId);
+      const template = templates.find((item) => item.id === templateId);
+      if (!template) return;
+
+      const workspaceFiles = await resolveWorkspaceFiles(template);
+
+      try {
+        setLoadingSchema(true);
+        await initializeTemplateEvaluation(template, workspaceFiles);
+      } catch (schemaError) {
+        setError(schemaError instanceof Error ? schemaError.message : "模板参数解析失败");
+      } finally {
+        setLoadingSchema(false);
+      }
     }
   }
 
@@ -2860,11 +3001,42 @@ export function StartWorkflow() {
                       }}
                       label="选择模板"
                     >
-                      {availableTemplates.map((tpl) => (
+                      {/* 内置模版 */}
+                      {availableTemplates.filter((tpl) => !tpl.isSavedParamTemplate && tpl.builtInWorkspaceId).length >
+                      0 ? (
+                        <ListSubheader>内置模版</ListSubheader>
+                      ) : null}
+                      {availableTemplates
+                        .filter((tpl) => !tpl.isSavedParamTemplate && tpl.builtInWorkspaceId)
+                        .map((tpl) => (
+                          <MenuItem key={tpl.id} value={tpl.id}>
+                            {tpl.name}
+                          </MenuItem>
+                        ))}
+
+                      {/* 我的模版 */}
+                      {availableTemplates.filter((tpl) => tpl.isSavedParamTemplate).length > 0 ? (
+                        <ListSubheader>我的模版</ListSubheader>
+                      ) : null}
+                      {availableTemplates.filter((tpl) => tpl.isSavedParamTemplate).map((tpl) => (
                         <MenuItem key={tpl.id} value={tpl.id}>
                           {tpl.name}
                         </MenuItem>
                       ))}
+
+                      {/* 自定义模版(zip导入) */}
+                      {availableTemplates.filter(
+                        (tpl) => !tpl.isSavedParamTemplate && !tpl.builtInWorkspaceId,
+                      ).length > 0 ? (
+                        <ListSubheader>自定义模版</ListSubheader>
+                      ) : null}
+                      {availableTemplates
+                        .filter((tpl) => !tpl.isSavedParamTemplate && !tpl.builtInWorkspaceId)
+                        .map((tpl) => (
+                          <MenuItem key={tpl.id} value={tpl.id}>
+                            {tpl.name}
+                          </MenuItem>
+                        ))}
                     </TextField>
 
                     <Button component="label" variant="outlined">
@@ -2889,6 +3061,21 @@ export function StartWorkflow() {
                     {loadingSchema ? <CircularProgress size={20} /> : null}
                     {groupedVisibleSchemaFields.ungroupedFields.map((field) => renderField(field))}
                     {groupedVisibleSchemaFields.roots.map((group) => renderGroup(group, 0))}
+
+                    {/* 保存为模版按钮 */}
+                    {isParamComplete ? (
+                      <>
+                        <Divider />
+                        <Button
+                          variant="outlined"
+                          startIcon={<SaveRoundedIcon />}
+                          onClick={() => setSaveDialogOpen(true)}
+                          fullWidth
+                        >
+                          {activeSavedTemplateId ? "更新模版" : "保存为模版"}
+                        </Button>
+                      </>
+                    ) : null}
                   </Stack>
                 </CardContent>
               </Card>
@@ -3046,6 +3233,38 @@ export function StartWorkflow() {
                     </Box>
                     {previewError ? <Alert severity="warning">{previewError}</Alert> : null}
                   </Stack>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {/* 交互式位置编辑器 */}
+            {canPreview &&
+            currentFile &&
+            isImage(currentFile) &&
+            evaluatedFields.some((field) => field.kind === "coord") ? (
+              <Card sx={{ borderRadius: 1.25 }}>
+                <CardContent>
+                  {evaluatedFields
+                    .filter((field) => field.kind === "coord")
+                    .map((field) => {
+                      const coordValue = readCoordValue(getFieldValue(field.key));
+                      const fileKey = getFileCacheKey(currentFile);
+                      const previewUrl = filePreviewUrlMap[fileKey];
+                      const dimensions = mediaDimensionMap[fileKey];
+
+                      return (
+                        <InteractivePositionEditor
+                          key={field.key}
+                          imageUrl={previewUrl}
+                          mediaWidth={dimensions?.width ?? 0}
+                          mediaHeight={dimensions?.height ?? 0}
+                          coordKey={field.key}
+                          coordValue={coordValue}
+                          onCoordChange={updateCoordField}
+                          disabled={!dimensions}
+                        />
+                      );
+                    })}
                 </CardContent>
               </Card>
             ) : null}
@@ -3220,6 +3439,37 @@ export function StartWorkflow() {
             {generationWarning}
           </Alert>
         </Snackbar>
+
+        {/* 保存为模版弹窗 */}
+        <SaveAsTemplateDialog
+          open={saveDialogOpen}
+          onClose={() => setSaveDialogOpen(false)}
+          onSave={(template: SavedParamTemplate) => {
+            if (activeSavedTemplateId) {
+              // 更新现有模版
+              const existing = savedParamTemplates.find((t) => t.id === activeSavedTemplateId);
+              if (existing) {
+                const updated: SavedParamTemplate = {
+                  ...existing,
+                  name: template.name,
+                  params: template.params,
+                  normalizedParams: template.normalizedParams,
+                  updatedAt: Date.now(),
+                };
+                updateSavedTemplate(updated);
+              }
+            } else {
+              // 创建新模版
+              saveSavedTemplate(template);
+              setActiveSavedTemplateId(template.id);
+            }
+          }}
+          sourceTemplateId={selectedTemplate?.id ?? ""}
+          sourceTemplateName={selectedTemplate?.name ?? ""}
+          params={params}
+          normalizedParams={normalizedParams}
+          mediaType={selectedTemplate?.mediaType ?? "both"}
+        />
       </Stack>
     </Box>
   );

@@ -7,24 +7,27 @@ import { StartPage } from "./pages/StartPage";
 import { theme } from "./theme";
 import { RuntimeSettingsProvider } from "./features/settings/runtimeSettings";
 import { UnsavedChangesGuardProvider } from "./unsavedChangesGuard";
+import { SavedParamTemplatesProvider } from "./features/start/savedParamTemplates/provider";
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <RuntimeSettingsProvider>
-        <UnsavedChangesGuardProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<AppLayout />}>
-                <Route index element={<StartPage />} />
-                <Route path="create" element={<CreatePage />} />
-                <Route path="settings" element={<SettingsPage />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </UnsavedChangesGuardProvider>
+        <SavedParamTemplatesProvider>
+          <UnsavedChangesGuardProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<AppLayout />}>
+                  <Route index element={<StartPage />} />
+                  <Route path="create" element={<CreatePage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </UnsavedChangesGuardProvider>
+        </SavedParamTemplatesProvider>
       </RuntimeSettingsProvider>
     </ThemeProvider>
   );

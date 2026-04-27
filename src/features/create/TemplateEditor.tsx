@@ -144,12 +144,19 @@ export function TemplateEditor() {
     const file = event.target.files?.[0];
     if (!file) return;
     void importTemplateZip(file).then((imported) => {
-      const importedFolders = buildFolders(imported);
-      setFiles(imported);
+      // 如果是用户保存的参数模版，提示用户使用 StartWorkflow
+      if (typeof imported === "object" && "type" in imported && imported.type === "saved-param-template") {
+        setEditorError("这是保存的参数模版，请在主页导入使用。");
+        return;
+      }
+
+      // 此时 TypeScript 知道 imported 是 TemplateFiles 类型
+      const importedFolders = buildFolders(imported as TemplateFiles);
+      setFiles(imported as TemplateFiles);
       setFolders(importedFolders);
       setExpandedFolders(new Set(importedFolders));
       setSelectedFolder(null);
-      const first = Object.keys(imported)[0] ?? "index.ts";
+      const first = Object.keys(imported as TemplateFiles)[0] ?? "index.ts";
       setActivePath(first);
       setMode("editor");
       setEditorError("");

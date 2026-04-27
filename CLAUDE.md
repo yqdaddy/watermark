@@ -108,3 +108,43 @@ Templates receive `VideoInput` with:
 | `src/features/start/StartWorkflow.tsx` | Main workflow component |
 | `src/features/create/TemplateEditor.tsx` | Template editor UI |
 | `src/media/interfaces.ts` | VideoInput/VideoOutput interfaces |
+
+## gstack
+
+Use `/browse` skill from gstack for all web browsing. Never use `mcp__claude-in-chrome__*` tools.
+
+**Available Skills:**
+- `/office-hours` — Office hours management
+- `/plan-ceo-review` — CEO review planning
+- `/plan-eng-review` — Engineering review planning
+- `/plan-design-review` — Design review planning
+- `/design-consultation` — Design consultation
+- `/design-shotgun` — Design shotgun
+- `/design-html` — Design HTML
+- `/review` — Code review
+- `/ship` — Ship changes
+- `/land-and-deploy` — Land and deploy
+- `/canary` — Canary deployment
+- `/benchmark` — Benchmark
+- `/browse` — Web browsing (preferred over Chrome MCP)
+- `/connect-chrome` — Connect Chrome
+- `/qa` — Quality assurance
+- `/qa-only` — QA only
+- `/design-review` — Design review
+- `/setup-browser-cookies` — Setup browser cookies
+- `/setup-deploy` — Setup deploy
+- `/setup-gbrain` — Setup gbrain
+- `/retro` — Retrospective
+- `/investigate` — Investigation
+- `/document-release` — Document release
+- `/codex` — Codex
+- `/cso` — CSO
+- `/autoplan` — Auto planning
+- `/plan-devex-review` — Devex review planning
+- `/devex-review` — Devex review
+- `/careful` — Careful mode
+- `/freeze` — Freeze
+- `/guard` — Guard
+- `/unfreeze` — Unfreeze
+- `/gstack-upgrade` — Upgrade gstack
+- `/learn` — Learning

@@ -1,6 +1,13 @@
 import JSZip from "jszip";
+import type { SavedParamTemplate } from "../../features/start/savedParamTemplates/types";
 
 export type TemplateFiles = Record<string, string>;
+
+export interface SavedParamTemplateImport {
+  type: "saved-param-template";
+  savedTemplate: SavedParamTemplate;
+  workspaceFiles: TemplateFiles;
+}
 
 export const defaultTemplateFiles: TemplateFiles = {
   "index.ts": `import { schema } from "schema";
@@ -124,7 +131,9 @@ export default async function App(config: Config, imageOrVideo: TemplateVideoInp
 `,
 };
 
-export async function importTemplateZip(file: File): Promise<TemplateFiles> {
+export async function importTemplateZip(
+  file: File,
+): Promise<TemplateFiles | SavedParamTemplateImport> {
   const zip = await JSZip.loadAsync(file);
   const entries = Object.entries(zip.files).filter(([, zipFile]) => !zipFile.dir);
   const files: TemplateFiles = {};
@@ -133,6 +142,46 @@ export async function importTemplateZip(file: File): Promise<TemplateFiles> {
     files[name] = await zipFile.async("string");
   }
 
+  // 检查是否有 config.json（用户模版导出格式）
+  if (files["config.json"]) {
+    try {
+      const configData = JSON.parse(files["config.json"]);
+      const savedTemplate: SavedParamTemplate = {
+        id: `saved-${Date.now()}`,
+        name: configData.name,
+        sourceTemplateId: configData.sourceTemplateId,
+        sourceTemplateName: configData.sourceTemplateName || configData.sourceTemplateId,
+        params: configData.params,
+        normalizedParams: configData.normalizedParams,
+        createdAt: configData.createdAt || Date.now(),
+        updatedAt: Date.now(),
+        mediaType: configData.mediaType || "both",
+      };
+
+      // 移除 config.json，保留 workspace 文件
+      const workspaceFiles: TemplateFiles = {};
+      for (const [name, content] of Object.entries(files)) {
+        if (name !== "config.json") {
+          workspaceFiles[name] = content;
+        }
+      }
+
+      if (!workspaceFiles["index.ts"]) {
+        workspaceFiles["index.ts"] = defaultTemplateFiles["index.ts"];
+      }
+
+      return {
+        type: "saved-param-template",
+        savedTemplate,
+        workspaceFiles,
+      };
+    } catch (error) {
+      console.error("Failed to parse config.json:", error);
+      // 解析失败，按普通模版处理
+    }
+  }
+
+  // 普通模版逻辑
   if (!files["index.ts"]) files["index.ts"] = defaultTemplateFiles["index.ts"];
   return files;
 }
@@ -142,5 +191,36 @@ export async function exportTemplateZip(files: TemplateFiles): Promise<Blob> {
   for (const [name, content] of Object.entries(files)) {
     zip.file(name, content);
   }
+  return zip.generateAsync({ type: "blob" });
+}
+
+/**
+ * 导出已保存的参数模版为 zip
+ *
+ * 包含来源模版的 workspace 文件 + config.json（参数配置）
+ */
+export async function exportSavedParamTemplateZip(
+  saved: SavedParamTemplate,
+  workspaceFiles: TemplateFiles,
+): Promise<Blob> {
+  const zip = new JSZip();
+
+  // 添加 workspace 文件
+  for (const [name, content] of Object.entries(workspaceFiles)) {
+    zip.file(name, content);
+  }
+
+  // 添加 config.json
+  const configFile = {
+    name: saved.name,
+    sourceTemplateId: saved.sourceTemplateId,
+    sourceTemplateName: saved.sourceTemplateName,
+    params: saved.params,
+    normalizedParams: saved.normalizedParams,
+    createdAt: saved.createdAt,
+    mediaType: saved.mediaType,
+  };
+  zip.file("config.json", JSON.stringify(configFile, null, 2));
+
   return zip.generateAsync({ type: "blob" });
 }

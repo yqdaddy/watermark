@@ -10,10 +10,13 @@ import {
   Typography,
 } from "@mui/material";
 import { useRuntimeSettings } from "./runtimeSettings";
+import { useSavedParamTemplates } from "../start/savedParamTemplates/provider";
+import { SavedTemplatesList } from "../start/savedParamTemplates/SavedTemplatesList";
 
 export function SettingsPanel() {
   const { settings, setUseMainThreadRender, setMaxConcurrency, resetSettings } =
     useRuntimeSettings();
+  const { templates, deleteTemplate, updateTemplate } = useSavedParamTemplates();
 
   return (
     <Stack spacing={2.2}>
@@ -52,6 +55,18 @@ export function SettingsPanel() {
           </Stack>
         </CardContent>
       </Card>
+
+      {/* 我的模版 */}
+      <SavedTemplatesList
+        templates={templates}
+        onDelete={deleteTemplate}
+        onRename={(id, newName) => {
+          const template = templates.find((t) => t.id === id);
+          if (template) {
+            updateTemplate({ ...template, name: newName });
+          }
+        }}
+      />
 
       <Card sx={{ borderRadius: 1.25 }}>
         <CardContent>

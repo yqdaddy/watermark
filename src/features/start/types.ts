@@ -45,6 +45,10 @@ export interface WatermarkTemplate {
   mediaType: InputMediaType | "both";
   fields: TemplateField[];
   builtInWorkspaceId?: string;
+  /** 标记是否为已保存的参数模版 */
+  isSavedParamTemplate?: boolean;
+  /** 已保存模版的来源模版 ID */
+  sourceTemplateId?: string;
 }
 
 export interface GeneratedAsset {
